@@ -13,11 +13,6 @@
 
 Built with Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui, Zustand, and Framer Motion.
 
-<br />
-
-<!-- Dynamic Stats & Contribution Graphs -->
-<img src="https://github-readme-activity-graph.vercel.app/graph?username=ShanthiStream&theme=react-dark&bg_color=0d1117&hide_border=true" width="100%" alt="ShanthiStream GitHub Activity Graph" />
-
 </div>
 
 ---
@@ -132,6 +127,14 @@ Created by [Dinesh Puthiyedath](https://dinesh-ai.vercel.app/).
 
 If you find Ollama Studio helpful, consider supporting its development:
 * **Buy me a coffee**: [buymeacoffee.com/shanthistream](https://buymeacoffee.com/shanthistream)
+
+---
+
+## 📈 GitHub Activity Graph
+
+<div align="center">
+  <img src="https://github-readme-activity-graph.vercel.app/graph?username=ShanthiStream&theme=react-dark&bg_color=0d1117&hide_border=true" width="100%" alt="ShanthiStream GitHub Activity Graph" />
+</div>
 
 ---
 
