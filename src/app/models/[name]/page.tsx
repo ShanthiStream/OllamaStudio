@@ -39,6 +39,16 @@ export default function ModelDetailPage() {
 
   const general = extractGeneralInfo(modelInfo);
   const modelSize = installedModel?.size || (general.size > 0 ? general.size : 0);
+  let contextLength = extractContextLength(modelInfo);
+  if (contextLength === 'Unknown') {
+    if (name.toLowerCase().includes('openai') || name.toLowerCase().includes('gpt-4')) {
+      contextLength = '128K';
+    } else if (name.toLowerCase().includes('anthropic') || name.toLowerCase().includes('claude')) {
+      contextLength = '200K';
+    } else if (name.toLowerCase().includes('google') || name.toLowerCase().includes('gemini')) {
+      contextLength = '1M';
+    }
+  }
 
   const systemRAM = systemInfo?.memory?.total_gb || 16;
   const availableRAM = systemInfo?.memory?.available_gb || 10;
@@ -164,7 +174,7 @@ export default function ModelDetailPage() {
                 <h2 className="text-sm font-semibold mb-4 uppercase tracking-wider text-muted-foreground">Model Info</h2>
                 <div className="space-y-3">
                   <InfoRow label="Family" value={familyInfo?.name || family} />
-                  <InfoRow label="Creator" value={familyInfo?.creator || 'Unknown'} />
+                  <InfoRow label="Context Length" value={contextLength} />
                   <InfoRow label="Parameters" value={formatParameterSize(paramSize)} />
                   <InfoRow label="Format" value={details?.details?.format || 'GGUF'} />
                   <InfoRow label="Quantization" value={quant.toUpperCase()} />
@@ -228,4 +238,18 @@ function extractGeneralInfo(modelInfo: Record<string, unknown>) {
   const size = (modelInfo['general.file_size'] || 
                 modelInfo['general.size'] || 0) as number;
   return { size };
+}
+
+function extractContextLength(modelInfo: Record<string, unknown>): string {
+  const key = Object.keys(modelInfo).find(k => k.endsWith('.context_length'));
+  if (key && modelInfo[key]) {
+    const val = Number(modelInfo[key]);
+    if (!isNaN(val)) {
+      if (val >= 1024) {
+        return `${(val / 1024).toFixed(0)}K`;
+      }
+      return `${val}`;
+    }
+  }
+  return 'Unknown';
 }
