@@ -8,7 +8,8 @@ import {
   MemoryStick as MemoryIcon, Zap, Clock, Info
 } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
-import { useModelDetails } from '@/hooks/useOllama';
+import { useModelDetails, useOllamaModels } from '@/hooks/useOllama';
+import { useSystemInfo } from '@/hooks/useHardwareMonitor';
 import { formatBytes, formatParameterSize, extractModelFamily } from '@/utils/format';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,8 +25,11 @@ export default function ModelDetailPage() {
   const router = useRouter();
   const name = decodeURIComponent(params.name as string);
   const { data: details, isLoading } = useModelDetails(name);
+  const { data: models } = useOllamaModels();
+  const { systemInfo } = useSystemInfo();
   const [showRaw, setShowRaw] = useState(false);
 
+  const installedModel = (models || []).find(m => m.name === name);
   const family = extractModelFamily(name);
   const familyInfo = MODEL_FAMILIES[family];
   const modelInfo = details?.model_info || {};
@@ -34,8 +38,14 @@ export default function ModelDetailPage() {
   const paramSize = details?.details?.parameter_size || '7B';
 
   const general = extractGeneralInfo(modelInfo);
+  const modelSize = installedModel?.size || (general.size > 0 ? general.size : 0);
 
-  const perf = estimateModelPerformance(name, paramSize, quant, 16, 10, true, 0);
+  const systemRAM = systemInfo?.memory?.total_gb || 16;
+  const availableRAM = systemInfo?.memory?.available_gb || 10;
+  const isAppleSilicon = systemInfo?.cpu?.is_apple_silicon ?? true;
+  const gpuMemoryMB = systemInfo?.gpu?.memory_total_mb || 0;
+
+  const perf = estimateModelPerformance(name, paramSize, quant, systemRAM, availableRAM, isAppleSilicon, gpuMemoryMB);
 
   return (
     <div>
@@ -158,7 +168,7 @@ export default function ModelDetailPage() {
                   <InfoRow label="Parameters" value={formatParameterSize(paramSize)} />
                   <InfoRow label="Format" value={details?.details?.format || 'GGUF'} />
                   <InfoRow label="Quantization" value={quant.toUpperCase()} />
-                  <InfoRow label="Size" value={formatBytes(general.size)} />
+                  <InfoRow label="Size" value={modelSize > 0 ? formatBytes(modelSize) : 'Unknown'} />
                 </div>
               </Card>
 
