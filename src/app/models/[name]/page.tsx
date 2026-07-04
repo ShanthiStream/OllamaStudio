@@ -10,7 +10,7 @@ import {
 import { PageHeader } from '@/components/shared/PageHeader';
 import { useModelDetails, useOllamaModels } from '@/hooks/useOllama';
 import { useSystemInfo } from '@/hooks/useHardwareMonitor';
-import { formatBytes, formatParameterSize, formatParameterSizeLong, extractModelFamily } from '@/utils/format';
+import { formatBytes, formatParameterSize, formatParameterSizeLong, extractModelFamily, detectModelCapabilities } from '@/utils/format';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -152,17 +152,9 @@ export default function ModelDetailPage() {
               <Card className="glass-card rounded-xl p-6">
                 <h2 className="text-lg font-semibold mb-4">Capabilities</h2>
                 <div className="flex flex-wrap gap-2">
-                  {[
-                    { label: 'Text Generation', present: true },
-                    { label: 'Chat', present: true },
-                    { label: 'Coding', present: family.includes('code') || name.toLowerCase().includes('code') },
-                    { label: 'Reasoning', present: name.toLowerCase().includes('reason') || name.toLowerCase().includes('deepseek') },
-                    { label: 'Vision', present: name.toLowerCase().includes('llava') || name.toLowerCase().includes('vision') },
-                    { label: 'Multilingual', present: true },
-                    { label: 'Tool Calling', present: !name.toLowerCase().includes('tiny') },
-                  ].filter(c => c.present).map((c, i) => (
-                    <Badge key={c.label} variant="secondary" className="px-3 py-1">
-                      {c.label}
+                  {detectModelCapabilities(name, details).map((capability, i) => (
+                    <Badge key={capability} variant="secondary" className="px-3 py-1">
+                      {capability}
                     </Badge>
                   ))}
                 </div>

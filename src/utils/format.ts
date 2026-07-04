@@ -121,3 +121,70 @@ export function isCloudModel(name: string): boolean {
     lower.startsWith('google/')
   );
 }
+
+export function detectModelCapabilities(name: string, details: any): string[] {
+  const capabilities: string[] = [];
+  const modelName = name.toLowerCase();
+  const modelInfo = details?.model_info || {};
+  const architecture = (modelInfo['general.architecture'] || '').toLowerCase();
+  
+  // 1. Is it an Embedding model?
+  const isEmbedding = modelName.includes('embed') || 
+                      modelName.includes('similarity') ||
+                      architecture === 'bert' || 
+                      architecture === 'nomic' ||
+                      modelName.includes('minilm');
+  
+  if (isEmbedding) {
+    capabilities.push('Embeddings');
+    capabilities.push('Semantic Search');
+    capabilities.push('Text Similarity');
+    return capabilities;
+  }
+
+  // 2. Is it a Vision model?
+  const hasProjector = details?.projector_info !== undefined && details?.projector_info !== null;
+  const isVision = modelName.includes('vision') || 
+                   modelName.includes('llava') || 
+                   modelName.includes('moondream') || 
+                   modelName.includes('minicpm-v') ||
+                   modelName.includes('vl') ||
+                   architecture === 'mllama' ||
+                   hasProjector;
+
+  // 3. Is it a Coding model?
+  const isCoding = modelName.includes('code') || 
+                   modelName.includes('coder') || 
+                   modelName.includes('starcoder') || 
+                   modelName.includes('stable-code');
+
+  // 4. Is it a Reasoning model?
+  const isReasoning = modelName.includes('reason') || 
+                      modelName.includes('deepseek-r') || 
+                      modelName.includes('qwq') ||
+                      modelName.includes('o1-') ||
+                      modelName.includes('o3-');
+
+  // 5. Is it a Chat / Instruct model?
+  const isBaseModel = modelName.includes('-base') || 
+                      (modelName.includes('llama') && !modelName.includes('instruct') && !modelName.includes('chat') && !modelName.includes('latest'));
+  const isChat = !isBaseModel;
+
+  // 6. Does it support Tool Calling?
+  const isTiny = modelName.includes('tiny') || modelName.includes('0.5b') || modelName.includes('0.8b');
+  const supportsToolCalling = isChat && !isReasoning && !isTiny;
+
+  // Build capabilities
+  capabilities.push('Text Generation');
+  if (isChat) capabilities.push('Chat / Dialogue');
+  if (isCoding) capabilities.push('Code Synthesis & Debugging');
+  if (isReasoning) capabilities.push('Deep Reasoning & Chain-of-Thought');
+  if (isVision) capabilities.push('Vision & Image Analysis');
+  if (supportsToolCalling) capabilities.push('Tool Calling / Function Calling');
+  
+  if (!modelName.includes('starcoder')) {
+    capabilities.push('Multilingual');
+  }
+
+  return capabilities;
+}
