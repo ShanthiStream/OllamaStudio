@@ -128,12 +128,18 @@ Created by [Dinesh Puthiyedath](https://dinesh-ai.vercel.app/).
 If you find Ollama Studio helpful, consider supporting its development:
 * **Buy me a coffee**: [buymeacoffee.com/shanthistream](https://buymeacoffee.com/shanthistream)
 
----
-
-## 📈 GitHub Activity Graph
+## 📈 Repository Statistics & Activity
 
 <div align="center">
-  <img src="https://github-readme-activity-graph.vercel.app/graph?username=ShanthiStream&theme=react-dark&bg_color=0d1117&hide_border=true" width="100%" alt="ShanthiStream GitHub Activity Graph" />
+
+[![Repository Commit Activity](https://img.shields.io/github/commit-activity/m/ShanthiStream/OllamaStudio?style=for-the-badge&color=orange&label=Commits%20per%20Month)](https://github.com/ShanthiStream/OllamaStudio/graphs/commit-activity)
+[![Last Commit](https://img.shields.io/github/last-commit/ShanthiStream/OllamaStudio?style=for-the-badge&color=blue)](https://github.com/ShanthiStream/OllamaStudio/commits/main)
+
+<br />
+
+<!-- Repo Stats Card -->
+<img src="https://github-readme-stats.vercel.app/api/pin/?username=ShanthiStream&repo=OllamaStudio&theme=react-dark&show_owner=false" alt="OllamaStudio Repository Stats" />
+
 </div>
 
 ---
