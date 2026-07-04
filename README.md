@@ -1,6 +1,24 @@
 # Ollama Studio
 
-A premium, Apple-inspired local AI model management dashboard and playground for [Ollama](https://ollama.ai). Built with Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui, Zustand, and Framer Motion.
+<div align="center">
+
+[![GitHub Stars](https://img.shields.io/github/stars/ShanthiStream/OllamaStudio?style=for-the-badge&logo=github&color=FFDD00&logoColor=black)](https://github.com/ShanthiStream/OllamaStudio/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/ShanthiStream/OllamaStudio?style=for-the-badge&logo=github&color=blue&logoColor=white)](https://github.com/ShanthiStream/OllamaStudio/network/members)
+[![License](https://img.shields.io/github/license/ShanthiStream/OllamaStudio?style=for-the-badge&color=green)](https://github.com/ShanthiStream/OllamaStudio/blob/main/LICENSE)
+[![Docker Build](https://img.shields.io/badge/docker-publish-blue?style=for-the-badge&logo=docker&logoColor=white)](https://github.com/ShanthiStream/OllamaStudio/pkgs/container/ollamastudio)
+
+<br />
+
+🚀 **A premium, Apple-inspired local AI model management dashboard and playground for [Ollama](https://ollama.ai).**
+
+Built with Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui, Zustand, and Framer Motion.
+
+<br />
+
+<!-- Dynamic Stats & Contribution Graphs -->
+<img src="https://github-readme-activity-graph.vercel.app/graph?username=ShanthiStream&theme=react-dark&bg_color=0d1117&hide_border=true" width="100%" alt="ShanthiStream GitHub Activity Graph" />
+
+</div>
 
 ---
 
