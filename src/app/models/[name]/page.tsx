@@ -134,10 +134,8 @@ export default function ModelDetailPage() {
                   </div>
                   <div className="p-4 glass rounded-lg">
                     <p className="text-sm font-medium mb-1">Context Length</p>
-                    <p className="text-sm text-muted-foreground">
-                      {details?.model_info?.['llama.context_length'] ? 
-                        `This model can remember approximately ${(Number(details.model_info['llama.context_length']) / 1024).toFixed(0)}K tokens.` :
-                        'Context length information not available.'}
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {getContextExplanation(contextLength)}
                     </p>
                   </div>
                   <div className="p-4 glass rounded-lg">
@@ -252,4 +250,30 @@ function extractContextLength(modelInfo: Record<string, unknown>): string {
     }
   }
   return 'Unknown';
+}
+
+function getContextExplanation(contextStr: string): string {
+  if (contextStr === 'Unknown') {
+    return 'Context length information is not specified for this model. It will operate on default parameters.';
+  }
+  const match = contextStr.match(/(\d+)K/i);
+  if (match) {
+    const kVal = parseInt(match[1]);
+    const tokens = kVal * 1024;
+    const approxWords = Math.round(tokens * 0.75);
+    const approxPages = Math.round(tokens / 700);
+    return `This model has a context window of ${contextStr} (${tokens.toLocaleString()} tokens). It can read and remember about ${approxWords.toLocaleString()} words (roughly equivalent to a ${approxPages}-page book or document) in a single conversation.`;
+  }
+  if (contextStr.toLowerCase().includes('m')) {
+    const val = parseFloat(contextStr);
+    const tokens = val * 1000000;
+    const approxPages = Math.round(tokens / 700);
+    return `This model has a massive context window of ${contextStr} (${tokens.toLocaleString()} tokens). It can analyze around ${approxPages.toLocaleString()} pages of text (e.g., several thick manuals or whole codebases) at once.`;
+  }
+  const val = parseInt(contextStr);
+  if (!isNaN(val)) {
+    const approxWords = Math.round(val * 0.75);
+    return `This model can process up to ${val.toLocaleString()} tokens (about ${approxWords.toLocaleString()} words) in its active memory.`;
+  }
+  return `This model can process up to ${contextStr} tokens in its active memory.`;
 }
