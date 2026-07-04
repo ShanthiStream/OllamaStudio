@@ -113,6 +113,17 @@ function PlaygroundContent() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const currentIdRef = useRef<string | null>(null);
   const abortControllersRef = useRef<Record<string, AbortController>>({});
+  const scrollContainersRef = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // Auto-scroll to bottom of active columns when streaming or messages update
+  useEffect(() => {
+    selectedModels.forEach(modelName => {
+      const container = scrollContainersRef.current[modelName];
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    });
+  }, [responsesMap, conversations, isStreamingMap, selectedModels]);
 
   useEffect(() => {
     setTimeout(() => setMounted(true), 0);
@@ -271,9 +282,8 @@ function PlaygroundContent() {
 
       const tpsInterval = setInterval(() => {
         const now = performance.now();
-        const windowStart = now - 2000;
-        const recent = tokenTimestamps.filter(t => t > windowStart);
-        const tps = recent.length > 1 ? ((recent.length - 1) / 2) : 0;
+        const elapsed = (now - startTime) / 1000;
+        const tps = elapsed > 0 ? (tokenTimestamps.length / elapsed) : 0;
         setTpsMap(prev => ({ ...prev, [modelName]: Math.round(tps * 10) / 10 }));
         setTokenCountMap(prev => ({ ...prev, [modelName]: modelResponse.length / 4 }));
       }, 300);
@@ -550,10 +560,14 @@ function PlaygroundContent() {
                 </div>
                 {/* Generation speed / status indicators */}
                 {isStreaming ? (
-                  <span className="text-[10px] text-emerald-500 font-medium flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                    Streaming
-                  </span>
+                  <div className="flex items-center gap-3 text-[10px] text-emerald-500 font-mono">
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                      Streaming
+                    </span>
+                    {tps > 0 && <span>{tps.toFixed(1)} tok/s</span>}
+                    {firstToken > 0 && <span>1st: {firstToken}ms</span>}
+                  </div>
                 ) : (
                   latency > 0 && (
                     <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono">
@@ -565,7 +579,10 @@ function PlaygroundContent() {
               </div>
 
               {/* Chat Column Messages List */}
-              <ScrollArea className="flex-1 p-4 h-full relative">
+              <div
+                ref={el => { scrollContainersRef.current[modelName] = el; }}
+                className="flex-1 p-4 overflow-y-auto min-h-0 h-full relative space-y-4 scroll-smooth"
+              >
                 {modelMessages.length === 0 && !streamingResponse ? (
                   <div className="h-full flex items-center justify-center flex-col text-center opacity-60 px-4 py-20">
                     <Bot className="w-10 h-10 mb-3 text-muted-foreground/80 animate-pulse" />
@@ -614,6 +631,23 @@ function PlaygroundContent() {
                             <ReactMarkdown>{streamingResponse}</ReactMarkdown>
                           </div>
                         </div>
+                        {/* Live stats underneath streaming bubble */}
+                        <span className="text-[9px] text-muted-foreground mt-1.5 ml-2 font-mono flex items-center gap-2 select-none">
+                          {tps > 0 && <span><Gauge className="w-3 h-3 inline mr-0.5" />{tps.toFixed(1)} tok/s</span>}
+                          {firstToken > 0 && <span><Zap className="w-3 h-3 inline mr-0.5" />1st: {firstToken}ms</span>}
+                          {tokensCount > 0 && <span>{Math.round(tokensCount)} tokens</span>}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Active thinking indicator (Three bounce dots) */}
+                    {isStreaming && !streamingResponse && (
+                      <div className="flex flex-col items-start">
+                        <div className="max-w-[85%] rounded-2xl p-3.5 glass border border-border/30 text-foreground flex items-center gap-1.5 h-10">
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent-color/60 animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent-color/60 animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent-color/60 animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
                       </div>
                     )}
 
@@ -631,7 +665,7 @@ function PlaygroundContent() {
                     )}
                   </div>
                 )}
-              </ScrollArea>
+              </div>
             </Card>
           );
         })}
