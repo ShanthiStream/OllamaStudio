@@ -44,10 +44,16 @@ export function extractModelFamily(name: string): string {
 }
 
 export function getParameterCount(paramSize: string): number {
-  const match = paramSize.match(/([\d.]+)([BMK])/i);
+  if (!paramSize) return 0;
+  if (/^\d+(\.\d+)?$/.test(paramSize)) {
+    const rawVal = parseFloat(paramSize);
+    return rawVal / 1000000000;
+  }
+  const match = paramSize.match(/([\d.]+)([TBMK])/i);
   if (!match) return 0;
   const value = parseFloat(match[1]);
   const unit = match[2].toUpperCase();
+  if (unit === 'T') return value * 1000;
   if (unit === 'B') return value;
   if (unit === 'M') return value / 1000;
   if (unit === 'K') return value / 1000000;
@@ -55,13 +61,55 @@ export function getParameterCount(paramSize: string): number {
 }
 
 export function formatParameterSize(size: string): string {
-  const match = size.match(/([\d.]+)([BMK])/i);
+  if (!size) return '';
+  if (/^\d+(\.\d+)?$/.test(size)) {
+    const rawVal = parseFloat(size);
+    if (rawVal >= 1000000000000) {
+      const val = rawVal / 1000000000000;
+      return `${val % 1 === 0 ? val.toFixed(0) : val.toFixed(2)}T`;
+    }
+    if (rawVal >= 1000000000) {
+      const val = rawVal / 1000000000;
+      return `${val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)}B`;
+    }
+    if (rawVal >= 1000000) {
+      const val = rawVal / 1000000;
+      return `${val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)}M`;
+    }
+    if (rawVal >= 1000) {
+      const val = rawVal / 1000;
+      return `${val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)}K`;
+    }
+    return size;
+  }
+  const match = size.match(/([\d.]+)([TBMK])/i);
   if (!match) return size;
   const value = parseFloat(match[1]);
   const unit = match[2].toUpperCase();
-  if (value >= 1000 && unit === 'M') return `${(value / 1000).toFixed(1)}B`;
-  if (value >= 1000 && unit === 'B') return `${(value).toFixed(0)}B`;
+  if (unit === 'B' && value >= 1000) {
+    const val = value / 1000;
+    return `${val % 1 === 0 ? val.toFixed(0) : val.toFixed(2)}T`;
+  }
+  if (unit === 'M' && value >= 1000) {
+    const val = value / 1000;
+    return `${val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)}B`;
+  }
   return size;
+}
+
+export function formatParameterSizeLong(formattedSize: string): string {
+  if (!formattedSize) return '';
+  const match = formattedSize.match(/([\d.]+)([TBMK])/i);
+  if (!match) return formattedSize;
+  const value = parseFloat(match[1]);
+  const unit = match[2].toUpperCase();
+  const nameMap: Record<string, string> = {
+    T: 'Trillion',
+    B: 'Billion',
+    M: 'Million',
+    K: 'Thousand'
+  };
+  return `${value} ${nameMap[unit] || unit}`;
 }
 
 export function isCloudModel(name: string): boolean {

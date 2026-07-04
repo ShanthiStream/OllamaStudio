@@ -20,6 +20,36 @@ export function estimateModelPerformance(
   isAppleSilicon: boolean,
   gpuMemoryMB: number
 ): PerformanceEstimate {
+  // 1. Detect if this is a Cloud Model (OpenAI, Anthropic, Google, or named cloud)
+  const isCloud = modelName.toLowerCase().includes('cloud') || 
+                  modelName.toLowerCase().startsWith('openai/') || 
+                  modelName.toLowerCase().startsWith('anthropic/') || 
+                  modelName.toLowerCase().startsWith('google/');
+
+  if (isCloud) {
+    let cloudScore = 98;
+    if (modelName.toLowerCase().includes('haiku') || modelName.toLowerCase().includes('mini') || modelName.toLowerCase().includes('flash')) {
+      cloudScore = 95; // Fast, cost-efficient cloud models
+    } else if (modelName.toLowerCase().includes('opus') || modelName.toLowerCase().includes('3-5') || modelName.toLowerCase().includes('4o')) {
+      cloudScore = 99; // Flagship powerhouse models
+    }
+    return {
+      memory_usage_mb: 0,
+      expected_tps: 65,
+      expected_first_token_ms: 180,
+      score: cloudScore,
+      label: 'excellent',
+      fits_in_ram: true,
+      will_use_swap: false,
+      recommendations: [
+        'Runs in the cloud with zero local memory or processor overhead.',
+        'Requires an active internet connection to communicate with API servers.',
+        'Offers top-tier intelligence and logical capacity.'
+      ],
+    };
+  }
+
+  // 2. Local Model Performance Scoring
   const params = getParameterCount(paramSize);
   const isQ4 = quantization?.includes('q4');
   const isQ5 = quantization?.includes('q5');
@@ -33,19 +63,33 @@ export function estimateModelPerformance(
   const systemRAM_MB = systemRAM * 1024;
   const availableRAM_MB = availableRAM * 1024;
 
+  // A. RAM Fitting Points (Max 40 pts)
+  // Penalizes if the model size exceeds local system memory limits
+  const fitsInRAM = memoryMB <= systemRAM_MB;
+  const ramFittingPoints = fitsInRAM ? 40 : 10;
+  const memPenalty = fitsInRAM ? 1 : 0.5;
+
+  // B. Memory Pressure / Overhead (Max 25 pts)
+  // Even if it fits, larger models leave less RAM for the system. Scale points based on overhead.
+  const memoryOverheadRatio = Math.min(1, memoryMB / systemRAM_MB);
+  const memoryOverheadPoints = fitsInRAM ? Math.round((1 - memoryOverheadRatio) * 25) : 0;
+
+  // C. Speed Performance Score (Max 20 pts)
+  // Smaller models execute tokens significantly faster. Scale based on parameter count.
+  const speedFactor = Math.min(1, 4 / Math.max(1, params));
+  const speedPoints = Math.round(speedFactor * 20);
+
+  // D. Hardware Acceleration (Max 15 pts)
+  // Reward active GPU acceleration or Apple Silicon platforms
+  const hasGPU = isAppleSilicon || gpuMemoryMB > 0;
+  const hardwareAccelerationPoints = hasGPU ? 15 : 5;
+
+  // Compute total score
+  const score = Math.max(5, Math.min(100, ramFittingPoints + memoryOverheadPoints + speedPoints + hardwareAccelerationPoints));
+
   const tpsBase = isAppleSilicon ? 40 : 25;
-  const paramFactor = Math.min(1, 7 / Math.max(1, params));
-  const memPenalty = memoryMB > systemRAM_MB ? 0.5 : 1;
-  const approxTps = tpsBase * paramFactor * memPenalty;
-
+  const approxTps = tpsBase * speedFactor * memPenalty;
   const firstTokenMs = Math.max(100, 500 / Math.max(0.1, params * memPenalty));
-
-  const score = Math.min(100, Math.round(
-    (memPenalty * 40) +
-    (paramFactor * 30) +
-    ((isAppleSilicon ? 20 : 10)) +
-    (memoryMB <= systemRAM_MB ? 10 : 0)
-  ));
 
   let label: PerformanceEstimate['label'] = 'heavy';
   if (score >= 90) label = 'excellent';

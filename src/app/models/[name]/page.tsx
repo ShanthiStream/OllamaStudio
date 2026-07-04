@@ -10,7 +10,7 @@ import {
 import { PageHeader } from '@/components/shared/PageHeader';
 import { useModelDetails, useOllamaModels } from '@/hooks/useOllama';
 import { useSystemInfo } from '@/hooks/useHardwareMonitor';
-import { formatBytes, formatParameterSize, extractModelFamily } from '@/utils/format';
+import { formatBytes, formatParameterSize, formatParameterSizeLong, extractModelFamily } from '@/utils/format';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -35,7 +35,9 @@ export default function ModelDetailPage() {
   const modelInfo = details?.model_info || {};
   const quant = details?.details?.quantization_level?.toLowerCase() || '';
   const quantInfo = QUANTIZATION_LEVELS[quant];
-  const paramSize = details?.details?.parameter_size || '7B';
+  const paramSize = details?.details?.parameter_size || 
+                    (modelInfo['general.parameter_count'] ? String(modelInfo['general.parameter_count']) : '') || 
+                    '7B';
 
   const general = extractGeneralInfo(modelInfo);
   const modelSize = installedModel?.size || (general.size > 0 ? general.size : 0);
@@ -140,8 +142,8 @@ export default function ModelDetailPage() {
                   </div>
                   <div className="p-4 glass rounded-lg">
                     <p className="text-sm font-medium mb-1">Parameters: {formatParameterSize(paramSize)}</p>
-                    <p className="text-sm text-muted-foreground">
-                      This model has approximately {paramSize} parameters. Larger models generally know more but require more resources.
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      This model has approximately {formatParameterSizeLong(formatParameterSize(paramSize))} parameters. Larger models generally have more knowledge and capacity but require more compute resources.
                     </p>
                   </div>
                 </div>
