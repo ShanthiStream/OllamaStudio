@@ -44,10 +44,10 @@ export function extractModelFamily(name: string): string {
 }
 
 export function getParameterCount(paramSize: string): number {
-  const match = paramSize.match(/([\d.]+)([BMK])/);
+  const match = paramSize.match(/([\d.]+)([BMK])/i);
   if (!match) return 0;
   const value = parseFloat(match[1]);
-  const unit = match[2];
+  const unit = match[2].toUpperCase();
   if (unit === 'B') return value;
   if (unit === 'M') return value / 1000;
   if (unit === 'K') return value / 1000000;
@@ -55,10 +55,10 @@ export function getParameterCount(paramSize: string): number {
 }
 
 export function formatParameterSize(size: string): string {
-  const match = size.match(/([\d.]+)([BMK])/);
+  const match = size.match(/([\d.]+)([BMK])/i);
   if (!match) return size;
   const value = parseFloat(match[1]);
-  const unit = match[2];
+  const unit = match[2].toUpperCase();
   if (value >= 1000 && unit === 'M') return `${(value / 1000).toFixed(1)}B`;
   if (value >= 1000 && unit === 'B') return `${(value).toFixed(0)}B`;
   return size;
