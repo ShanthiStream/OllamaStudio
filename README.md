@@ -132,13 +132,11 @@ If you find Ollama Studio helpful, consider supporting its development:
 
 <div align="center">
 
-[![Repository Commit Activity](https://img.shields.io/github/commit-activity/m/ShanthiStream/OllamaStudio?style=for-the-badge&color=orange&label=Commits%20per%20Month)](https://github.com/ShanthiStream/OllamaStudio/graphs/commit-activity)
-[![Last Commit](https://img.shields.io/github/last-commit/ShanthiStream/OllamaStudio?style=for-the-badge&color=blue)](https://github.com/ShanthiStream/OllamaStudio/commits/main)
-
-<br />
-
-<!-- Repo Stats Card -->
-<img src="https://github-readme-stats.vercel.app/api/pin/?username=ShanthiStream&repo=OllamaStudio&theme=react-dark&show_owner=false" alt="OllamaStudio Repository Stats" />
+| Metric | Badges |
+| :--- | :--- |
+| 🚀 **Development Activity** | [![Commits per Month](https://img.shields.io/github/commit-activity/m/ShanthiStream/OllamaStudio?style=for-the-badge&color=orange&label=Commits)](https://github.com/ShanthiStream/OllamaStudio/graphs/commit-activity) [![Last Commit](https://img.shields.io/github/last-commit/ShanthiStream/OllamaStudio?style=for-the-badge&color=blue)](https://github.com/ShanthiStream/OllamaStudio/commits/main) |
+| 🛠️ **Project Specs** | ![Repo Size](https://img.shields.io/github/repo-size/ShanthiStream/OllamaStudio?style=for-the-badge&logo=git&color=purple) ![Top Language](https://img.shields.io/github/languages/top/ShanthiStream/OllamaStudio?style=for-the-badge&logo=typescript&color=blue) |
+| 🐛 **Community Health** | ![Open Issues](https://img.shields.io/github/issues/ShanthiStream/OllamaStudio?style=for-the-badge&logo=github&color=red) ![Open PRs](https://img.shields.io/github/issues-pr/ShanthiStream/OllamaStudio?style=for-the-badge&logo=github&color=green) |
 
 </div>
 
