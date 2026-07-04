@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  ollama-studio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ollama-studio
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      # Change this URL if your Ollama daemon runs on a different host or port.
+      # By default, host.docker.internal resolves to the host machine IP.
+      - NEXT_PUBLIC_OLLAMA_API_URL=http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
