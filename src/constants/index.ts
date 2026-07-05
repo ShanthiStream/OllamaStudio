@@ -12,7 +12,6 @@ export const REFRESH_INTERVALS = {
 
 export const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', href: '/' },
-  { id: 'models', label: 'Models', icon: 'Brain', href: '/models' },
   { id: 'chat', label: 'Chat Arena', icon: 'MessageSquare', href: '/chat' },
   { id: 'benchmarks', label: 'Benchmarks', icon: 'BarChart3', href: '/benchmarks' },
   { id: 'running', label: 'Running Models', icon: 'Play', href: '/running' },

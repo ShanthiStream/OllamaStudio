@@ -48,22 +48,98 @@ export const ollamaService = {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullContent = '';
+      let buffer = '';
+      let inThinking = false;
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n').filter(Boolean);
+        if (done) {
+          if (buffer.trim()) {
+            try {
+              const parsed = JSON.parse(buffer);
+              if (parsed.error) {
+                throw new Error(parsed.error);
+              }
+              const content = parsed.message?.content || '';
+              const thinking = parsed.message?.thinking || '';
+              let text = '';
+              if (thinking) {
+                if (!inThinking) {
+                  text += '<think>\n';
+                  inThinking = true;
+                }
+                text += thinking;
+              } else if (content) {
+                if (inThinking) {
+                  text += '\n</think>\n\n';
+                  inThinking = false;
+                }
+                text += content;
+              }
+              if (text) {
+                fullContent += text;
+                onChunk(text);
+              }
+            } catch (e) {
+              if (e instanceof Error && e.message !== 'Unexpected end of JSON input') {
+                throw e;
+              }
+            }
+          }
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
         for (const line of lines) {
+          if (!line.trim()) continue;
           try {
             const parsed = JSON.parse(line);
-            if (parsed.message?.content) {
-              fullContent += parsed.message.content;
-              onChunk(parsed.message.content);
+            if (parsed.error) {
+              throw new Error(parsed.error);
             }
-            if (parsed.done) return fullContent;
-          } catch {}
+            const content = parsed.message?.content || '';
+            const thinking = parsed.message?.thinking || '';
+            let text = '';
+            if (thinking) {
+              if (!inThinking) {
+                text += '<think>\n';
+                inThinking = true;
+              }
+              text += thinking;
+            } else if (content) {
+              if (inThinking) {
+                text += '\n</think>\n\n';
+                inThinking = false;
+              }
+              text += content;
+            }
+            if (text) {
+              fullContent += text;
+              onChunk(text);
+            }
+            if (parsed.done) {
+              if (inThinking) {
+                fullContent += '\n</think>';
+                onChunk('\n</think>');
+                inThinking = false;
+              }
+              return fullContent;
+            }
+          } catch (e) {
+            if (e instanceof Error && !e.message.includes('JSON')) {
+              throw e;
+            }
+          }
         }
+      }
+
+      if (inThinking) {
+        fullContent += '\n</think>';
+        onChunk('\n</think>');
+        inThinking = false;
       }
       return fullContent;
     }
@@ -92,13 +168,37 @@ export const ollamaService = {
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
+    let buffer = '';
 
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value);
-      const lines = chunk.split('\n').filter(Boolean);
+      if (done) {
+        if (buffer.trim()) {
+          try {
+            const parsed = JSON.parse(buffer);
+            if (onProgress) {
+              let percent = 0;
+              if (parsed.total && parsed.completed) {
+                percent = Math.round((parsed.completed / parsed.total) * 100);
+              }
+              onProgress({
+                status: parsed.status,
+                completed: parsed.completed,
+                total: parsed.total,
+                percent,
+              });
+            }
+          } catch {}
+        }
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
       for (const line of lines) {
+        if (!line.trim()) continue;
         try {
           const parsed = JSON.parse(line);
           if (onProgress) {

@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/' },
   { id: 'playground', label: 'Playground', icon: Zap, href: '/playground' },
-  { id: 'models', label: 'Models', icon: Brain, href: '/models' },
   { id: 'benchmarks', label: 'Benchmarks', icon: BarChart3, href: '/benchmarks' },
   { id: 'running', label: 'Running Models', icon: Play, href: '/running' },
   { id: 'system', label: 'System Monitor', icon: Activity, href: '/system' },

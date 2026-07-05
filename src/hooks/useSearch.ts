@@ -107,7 +107,6 @@ export function useSearch(options: UseSearchOptions = {}) {
     if (includeNavigation) {
       const navItems = [
         { id: 'nav-dashboard', title: 'Dashboard', type: 'navigation' as const, href: '/' },
-        { id: 'nav-models', title: 'Models', type: 'navigation' as const, href: '/models' },
         { id: 'nav-chat', title: 'Chat Arena', type: 'navigation' as const, href: '/chat' },
         { id: 'nav-benchmarks', title: 'Benchmarks', type: 'navigation' as const, href: '/benchmarks' },
         { id: 'nav-running', title: 'Running Models', type: 'navigation' as const, href: '/running' },

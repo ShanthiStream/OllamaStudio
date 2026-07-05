@@ -5,10 +5,27 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Zap, Send, Bot, RefreshCw, Trash2, Gauge, Clock, Sliders, ChevronRight,
-  Sparkles, Check, Play, StopCircle, FileText, AlertCircle, X, HelpCircle, Plus
+  Sparkles, Check, Play, StopCircle, FileText, AlertCircle, X, HelpCircle, Plus, Brain
 } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { useOllamaModels, useChat } from '@/hooks/useOllama';
+
+const parseThinkingAndResponse = (content: string) => {
+  if (!content) return { thinking: '', response: '' };
+  const thinkRegex = /<think>([\s\S]*?)<\/think>/g;
+  const match = thinkRegex.exec(content);
+  if (match) {
+    const thinking = match[1].trim();
+    const response = content.replace(thinkRegex, '').trim();
+    return { thinking, response };
+  }
+  if (content.includes('<think>')) {
+    const parts = content.split('<think>');
+    const thinking = parts[1].trim();
+    return { thinking, response: '' };
+  }
+  return { thinking: '', response: content };
+};
 import { useAppStore } from '@/stores/appStore';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -90,6 +107,11 @@ function PlaygroundContent() {
   // Streaming and metrics states per model
   const [isStreamingMap, setIsStreamingMap] = useState<Record<string, boolean>>({});
   const [responsesMap, setResponsesMap] = useState<Record<string, string>>({});
+
+  const isAnyModelStreaming = Object.values(isStreamingMap).some(Boolean);
+  const generatingModelNames = Object.entries(isStreamingMap)
+    .filter(([_, isStreaming]) => isStreaming)
+    .map(([name]) => name.replace(/:latest$/, ''));
   const [tpsMap, setTpsMap] = useState<Record<string, number>>({});
   const [latencyMap, setLatencyMap] = useState<Record<string, number>>({});
   const [firstTokenMap, setFirstTokenMap] = useState<Record<string, number>>({});
@@ -120,7 +142,14 @@ function PlaygroundContent() {
     selectedModels.forEach(modelName => {
       const container = scrollContainersRef.current[modelName];
       if (container) {
-        container.scrollTop = container.scrollHeight;
+        // Scroll to bottom only if user is near the bottom (within 120px) or streaming just started
+        const isNearBottom = container.scrollHeight - container.clientHeight - container.scrollTop < 120;
+        const isStreaming = isStreamingMap[modelName];
+        const isFirstToken = (responsesMap[modelName] || '').length < 50;
+
+        if (isNearBottom || isFirstToken || !isStreaming) {
+          container.scrollTop = container.scrollHeight;
+        }
       }
     });
   }, [responsesMap, conversations, isStreamingMap, selectedModels]);
@@ -566,13 +595,14 @@ function PlaygroundContent() {
                       Streaming
                     </span>
                     {tps > 0 && <span>{tps.toFixed(1)} tok/s</span>}
-                    {firstToken > 0 && <span>1st: {firstToken}ms</span>}
+                    {firstToken > 0 && <span>1st Token: {firstToken}ms</span>}
                   </div>
                 ) : (
                   latency > 0 && (
                     <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono">
                       <span>{tps.toFixed(0)} tok/s</span>
                       <span>{latency}ms</span>
+                      {firstToken > 0 && <span>1st Token: {firstToken}ms</span>}
                     </div>
                   )
                 )}
@@ -600,13 +630,34 @@ function PlaygroundContent() {
                           className={`max-w-[85%] rounded-2xl p-3.5 ${
                             msg.role === 'user'
                               ? 'bg-accent-color text-white shadow-sm font-medium'
-                              : 'glass border border-border/30 text-foreground'
+                              : 'glass border border-border/30 text-foreground w-full'
                           }`}
                         >
                           {msg.role === 'assistant' ? (
-                            <div className="prose prose-sm dark:prose-invert max-w-none break-words font-sans leading-relaxed text-sm">
-                              <ReactMarkdown>{msg.content}</ReactMarkdown>
-                            </div>
+                            (() => {
+                              const { thinking, response } = parseThinkingAndResponse(msg.content);
+                              return (
+                                <div className="space-y-2">
+                                  {thinking && (
+                                    <div className="text-xs text-muted-foreground/60 bg-muted/25 border-l-2 border-accent-color/30 pl-3 py-2 my-1 rounded-r-lg font-sans">
+                                      <div className="font-semibold text-[10px] text-muted-foreground/80 mb-1 flex items-center gap-1.5 uppercase tracking-wider select-none">
+                                        <Brain className="w-3.5 h-3.5 text-accent-color" />
+                                        Thinking Process
+                                      </div>
+                                      <p className="whitespace-pre-wrap italic">{thinking}</p>
+                                    </div>
+                                  )}
+                                  {response && (
+                                    <div className="prose prose-sm dark:prose-invert max-w-none break-words font-sans leading-relaxed text-sm">
+                                      <ReactMarkdown>{response}</ReactMarkdown>
+                                    </div>
+                                  )}
+                                  {!thinking && !response && (
+                                    <span className="text-xs text-muted-foreground/50 italic">Empty response</span>
+                                  )}
+                                </div>
+                              );
+                            })()
                           ) : (
                             <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                           )}
@@ -616,7 +667,7 @@ function PlaygroundContent() {
                             <span><Gauge className="w-3 h-3 inline mr-0.5" />{msg.metrics.tokens_per_second} tok/s</span>
                             <span><Clock className="w-3 h-3 inline mr-0.5" />{msg.metrics.latency_ms}ms</span>
                             {msg.metrics.first_token_ms && (
-                              <span><Zap className="w-3 h-3 inline mr-0.5" />1st: {msg.metrics.first_token_ms}ms</span>
+                              <span><Zap className="w-3 h-3 inline mr-0.5" />1st Token: {msg.metrics.first_token_ms}ms</span>
                             )}
                           </span>
                         )}
@@ -625,28 +676,54 @@ function PlaygroundContent() {
 
                     {/* Active streaming block */}
                     {streamingResponse && (
-                      <div className="flex flex-col items-start animate-fade-in">
-                        <div className="max-w-[85%] rounded-2xl p-3.5 glass border border-border/30 text-foreground">
-                          <div className="prose prose-sm dark:prose-invert max-w-none break-words font-sans leading-relaxed text-sm">
-                            <ReactMarkdown>{streamingResponse}</ReactMarkdown>
-                          </div>
+                      <div className="flex flex-col items-start animate-fade-in w-full max-w-[85%]">
+                        <div className="rounded-2xl p-3.5 glass border border-border/30 text-foreground w-full">
+                          {(() => {
+                            const { thinking, response } = parseThinkingAndResponse(streamingResponse);
+                            return (
+                              <div className="space-y-2">
+                                {thinking && (
+                                  <div className="text-xs text-muted-foreground/60 bg-muted/25 border-l-2 border-accent-color/30 pl-3 py-2 my-1 rounded-r-lg font-sans">
+                                    <div className="font-semibold text-[10px] text-muted-foreground/80 mb-1 flex items-center gap-1.5 uppercase tracking-wider select-none">
+                                      <Brain className="w-3.5 h-3.5 text-accent-color" />
+                                      {isStreaming && !response ? 'Thinking...' : 'Thinking Process'}
+                                    </div>
+                                    <p className="whitespace-pre-wrap italic">{thinking}</p>
+                                  </div>
+                                )}
+                                {response && (
+                                  <div className="prose prose-sm dark:prose-invert max-w-none break-words font-sans leading-relaxed text-sm">
+                                    <ReactMarkdown>{response}</ReactMarkdown>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                          {isStreaming && (
+                            <span className="inline-block w-1.5 h-3.5 bg-accent-color/85 ml-1 animate-pulse" />
+                          )}
                         </div>
                         {/* Live stats underneath streaming bubble */}
                         <span className="text-[9px] text-muted-foreground mt-1.5 ml-2 font-mono flex items-center gap-2 select-none">
                           {tps > 0 && <span><Gauge className="w-3 h-3 inline mr-0.5" />{tps.toFixed(1)} tok/s</span>}
-                          {firstToken > 0 && <span><Zap className="w-3 h-3 inline mr-0.5" />1st: {firstToken}ms</span>}
+                          {firstToken > 0 && <span><Zap className="w-3 h-3 inline mr-0.5" />1st Token: {firstToken}ms</span>}
                           {tokensCount > 0 && <span>{Math.round(tokensCount)} tokens</span>}
                         </span>
                       </div>
                     )}
 
-                    {/* Active thinking indicator (Three bounce dots) */}
+                    {/* Active thinking indicator (Three bounce dots + text) */}
                     {isStreaming && !streamingResponse && (
-                      <div className="flex flex-col items-start">
-                        <div className="max-w-[85%] rounded-2xl p-3.5 glass border border-border/30 text-foreground flex items-center gap-1.5 h-10">
-                          <span className="w-1.5 h-1.5 rounded-full bg-accent-color/60 animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <span className="w-1.5 h-1.5 rounded-full bg-accent-color/60 animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <span className="w-1.5 h-1.5 rounded-full bg-accent-color/60 animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div className="flex flex-col items-start animate-pulse">
+                        <div className="max-w-[85%] rounded-2xl p-3.5 glass border border-border/30 text-foreground flex items-center gap-2.5 h-10">
+                          <div className="flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-accent-color animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-accent-color animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-accent-color animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </div>
+                          <span className="text-xs text-muted-foreground font-medium select-none">
+                            {modelName.replace(/:latest$/, '')} is thinking...
+                          </span>
                         </div>
                       </div>
                     )}
@@ -713,9 +790,14 @@ function PlaygroundContent() {
             value={prompt}
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
-            placeholder="Send a prompt... (Type / for saved templates)"
-            className="min-h-[44px] max-h-[120px] resize-none border-none bg-transparent focus-visible:ring-0 p-2 shadow-none text-sm placeholder:text-muted-foreground/60 leading-relaxed flex-1"
+            placeholder={
+              isAnyModelStreaming
+                ? `${generatingModelNames.join(' & ')} ${generatingModelNames.length > 1 ? 'are' : 'is'} thinking...`
+                : "Send a prompt... (Type / for saved templates)"
+            }
+            className="min-h-[44px] max-h-[120px] resize-none border-none bg-transparent focus-visible:ring-0 p-2 shadow-none text-sm placeholder:text-muted-foreground/60 leading-relaxed flex-1 disabled:opacity-75"
             rows={1}
+            disabled={isAnyModelStreaming}
           />
           <div className="flex items-center gap-2 pb-1">
             {Object.values(isStreamingMap).some(Boolean) ? (
